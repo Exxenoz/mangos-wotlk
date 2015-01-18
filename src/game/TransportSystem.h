@@ -55,11 +55,16 @@ class TransportBase
         explicit TransportBase(WorldObject* owner);
         virtual ~TransportBase();
 
-        void Update(uint32 diff);
+        // Helper functions to add/ remove a passenger from the list
+        void BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo, uint8 seat);
+        void UnBoardPassenger(WorldObject* passenger);
+
+        virtual void Update(uint32 diff);
         void UpdateGlobalPositions();
         void UpdateGlobalPositionOf(WorldObject* passenger, float lx, float ly, float lz, float lo) const;
 
-        WorldObject* GetOwner() const { return m_owner; }
+        virtual WorldObject* GetOwner() const { return m_owner; }
+        PassengerMap const& GetPassengers() const { return m_passengers; }
 
         // Helper functions to calculate positions
         void RotateLocalPosition(float lx, float ly, float& rx, float& ry) const;
@@ -71,10 +76,6 @@ class TransportBase
         bool HasOnBoard(WorldObject const* passenger) const;
 
     protected:
-        // Helper functions to add/ remove a passenger from the list
-        void BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo, uint8 seat);
-        void UnBoardPassenger(WorldObject* passenger);
-
         WorldObject* m_owner;                               ///< The transporting unit
         PassengerMap m_passengers;                          ///< List of passengers and their transport-information
 
@@ -82,6 +83,53 @@ class TransportBase
         Position m_lastPosition;
         float m_sinO, m_cosO;
         uint32 m_updatePositionsTimer;                      ///< Timer that is used to trigger updates for global coordinate calculations
+};
+
+namespace Movement
+{
+    struct Location;
+    template<typename length_type> class Spline;
+};
+
+/**
+ * A class to provide support for gameobject transporter.
+ */
+
+class GOTransportBase : public TransportBase
+{
+    public:
+        explicit GOTransportBase(GameObject* owner, uint32 pathId);
+        ~GOTransportBase();
+
+        bool Board(WorldObject* passenger, float lx, float ly, float lz, float lo);
+        bool UnBoard(WorldObject* passenger);
+
+        void Update(uint32 diff) override;
+
+        GameObject* GetOwner() const { return (GameObject*)m_owner; }
+        int32 GetPathProgress() const { return m_pathProgress; }
+
+        void InitializePassengers();
+        void DestroyAllPassengers();
+
+    private:
+        void LoadTransportSpline();
+        void UpdateTransportSpline(uint32 diff);
+
+        TaxiPathNodeEntry const& GetCurrentNode();
+        Movement::Location ComputePosition();
+
+        Movement::Spline<int32> const* m_transportSpline;
+        uint32 m_transportStopTimer;
+        uint32 m_currentNode;
+
+        int32 m_pointIdx;
+        int32 m_timePassed;
+        int32 m_pathProgress;
+        bool m_bArrived;
+
+        bool m_bInitialized;
+        GuidList m_summonedPassengers;
 };
 
 /**
@@ -105,6 +153,7 @@ class TransportInfo
 
         // Required for chain-updating (passenger on transporter on transporter)
         bool IsOnVehicle() const { return m_transport->GetOwner()->GetTypeId() == TYPEID_PLAYER || m_transport->GetOwner()->GetTypeId() == TYPEID_UNIT; }
+        bool IsOnMOTransport() const { return GetTransportGuid().IsMOTransport(); }
 
         // Helper function if a passenger is already boarded somewhere onto the boarded transports
         bool HasOnBoard(WorldObject const* passenger) const { return m_transport->HasOnBoard(passenger); }

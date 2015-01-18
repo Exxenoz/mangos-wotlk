@@ -31,6 +31,8 @@
 #include "Unit.h"
 #include "Vehicle.h"
 #include "MapManager.h"
+#include "TransportMgr.h"
+#include "movement/MoveSpline.h"
 
 /* **************************************** TransportBase ****************************************/
 
@@ -182,6 +184,286 @@ void TransportBase::UnBoardPassenger(WorldObject* passenger)
     // Unboard finally
     m_passengers.erase(itr);
 }
+
+/* *************************************** GOTransportBase ***************************************/
+
+GOTransportBase::GOTransportBase(GameObject* owner, uint32 pathId) :
+    TransportBase(owner),
+    m_transportStopTimer(0),
+    m_currentNode(0),
+    m_pointIdx(0),
+    m_timePassed(0),
+    m_pathProgress(0),
+    m_bArrived(false),
+    m_bInitialized(false)
+{
+    LoadTransportSpline();
+}
+
+GOTransportBase::~GOTransportBase()
+{
+}
+
+bool GOTransportBase::Board(WorldObject* passenger, float lx, float ly, float lz, float lo)
+{
+    MANGOS_ASSERT(passenger);
+
+    // Passenger still boarded
+    if (passenger->IsBoarded())
+        return false;
+
+    // Transport size is limited
+    if (fabs(lx) > 50.0f || fabs(ly) > 50.0f || fabs(lz) > 50.0f)
+        return false;
+
+    BoardPassenger(passenger, lx, ly, lz, lo, 255);
+
+    // Set ONTRANSPORT flag for client
+    if (passenger->GetObjectGuid().IsUnit())
+        ((Unit*)passenger)->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
+
+    DETAIL_LOG("%s boarded transport %s.", passenger->GetName(), m_owner->GetName());
+    return true;
+}
+
+bool GOTransportBase::UnBoard(WorldObject* passenger)
+{
+    MANGOS_ASSERT(passenger);
+
+    // Passenger already unboarded
+    if (!passenger->IsBoarded())
+        return false;
+
+    // Remove ONTRANSPORT flag
+    if (passenger->GetObjectGuid().IsUnit())
+        ((Unit*)passenger)->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
+
+    UnBoardPassenger(passenger);
+
+    DETAIL_LOG("%s removed from transport %s.", passenger->GetName(), m_owner->GetName());
+    return true;
+}
+
+void GOTransportBase::Update(uint32 diff)
+{
+    if (!m_bInitialized) // TODO REMOVE and call directly when the MOT is properly created
+    {
+        InitializePassengers();                             // Summon passengers
+        m_bInitialized = true;
+    }
+
+    if (m_bArrived)
+        return;
+
+    m_pathProgress += diff;
+
+    if (m_transportStopTimer)
+    {
+        if (m_transportStopTimer < diff)
+        {
+            m_transportStopTimer = 0;
+
+            // Handle departure event
+            //TaxiPathNodeEntry const& node = GetCurrentNode();
+
+            //if (node.departureEventID)
+                //DoEventIfAny(player, m_currentNode, departureEvent);
+        }
+        else
+        {
+            m_transportStopTimer -= diff;
+            return; // MOT is chilling at the beach
+        }
+    }
+
+    UpdateTransportSpline(diff);
+
+    enum
+    {
+        POSITION_UPDATE_DELAY = 400,
+    };
+
+    if (m_updatePositionsTimer < diff || m_bArrived)
+    {
+        m_updatePositionsTimer = POSITION_UPDATE_DELAY;
+        Movement::Location loc = ComputePosition();
+
+        m_owner->GetMap()->GameObjectRelocation((GameObject*)m_owner, loc.x, loc.y, loc.z, loc.orientation);
+        DETAIL_FILTER_LOG(LOG_FILTER_TRANSPORT_MOVES, "%s moved to %f %f %f %f", m_owner->GetName(), loc.x, loc.y, loc.z, loc.orientation);
+
+        // Update passenger positions
+        UpdateGlobalPositions();
+    }
+    else
+        m_updatePositionsTimer -= diff;
+
+    uint32 pointId = (uint32)m_pointIdx - m_transportSpline->first() + (int)m_bArrived;
+    if (pointId > m_currentNode)
+    {
+        do
+        {
+            ++m_currentNode;
+
+            // Handle arrival event
+            TaxiPathNodeEntry const& node = GetCurrentNode();
+
+            //if (node.arrivalEventID)
+                //DoEventIfAny(player, m_currentNode, arrivalEvent);
+
+#ifdef DEBUG_SHOW_MOT_WAYPOINTS
+            m_owner->GetMap()->MonsterYellToMap(GetCreatureTemplateStore(1), 238, LANG_UNIVERSAL, NULL);
+#endif
+
+            if (node.delay)
+            {
+                m_transportStopTimer = node.delay * 1000;
+                break;
+            }
+
+            if (pointId == m_currentNode)
+                break;
+        }
+        while (true);
+    }
+
+    // Last waypoint is reached
+    if (m_bArrived)
+        sTransportMgr.ReachedLastWaypoint(this);
+}
+
+void GOTransportBase::InitializePassengers()
+{
+    if (Creature* pSummoned = NULL)//m_owner->SummonCreature(1, m_owner->GetPositionX()+5, m_owner->GetPositionY()+5, m_owner->GetPositionZ()+30, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0))
+    {
+        m_summonedPassengers.push_back(pSummoned->GetObjectGuid());
+        Board(pSummoned, 5.0f, 5.0f, 30.0f, 0.0f);
+        pSummoned->SetObjectScale(5.0f);
+        pSummoned->CastSpell(pSummoned, 55816, true);
+    }
+}
+
+void GOTransportBase::DestroyAllPassengers()
+{
+    for (GuidList::iterator itr = m_summonedPassengers.begin(); itr != m_summonedPassengers.end(); ++itr)
+    {
+        Creature* pSummoned = m_owner->GetMap()->GetCreature(*itr);
+        if (!pSummoned)
+            continue;
+        UnBoard(pSummoned);
+        pSummoned->ForcedDespawn();
+    }
+}
+
+void GOTransportBase::LoadTransportSpline()
+{
+    // ToDo: Handle elevators and similar
+    MANGOS_ASSERT(m_owner->GetObjectGuid().IsMOTransport());
+
+    m_transportSpline = sTransportMgr.GetTransportSpline(m_owner->GetEntry(), m_owner->GetMap()->GetId());
+    MANGOS_ASSERT(m_transportSpline);
+
+    m_pointIdx = m_transportSpline->first();
+}
+
+void GOTransportBase::UpdateTransportSpline(uint32 diff)
+{
+    m_timePassed += diff;
+
+    if (m_timePassed >= m_transportSpline->length(m_pointIdx + 1))
+    {
+        ++m_pointIdx;
+        if (m_pointIdx >= m_transportSpline->last())
+        {
+            if (m_transportSpline->isCyclic())
+            {
+                m_currentNode = 0;
+                m_pointIdx = m_transportSpline->first();
+                m_timePassed = m_timePassed % m_transportSpline->length();
+            }
+            else // Arrived
+            {
+                m_bArrived = true;
+                m_pointIdx = m_transportSpline->last() - 1;
+                m_timePassed = m_transportSpline->length();
+            }
+        }
+    }
+}
+
+TaxiPathNodeEntry const& GOTransportBase::GetCurrentNode()
+{
+    TaxiPathNodeList const& path = sTransportMgr.GetTaxiPathNodeList(((GameObject*)m_owner)->GetGOInfo()->moTransport.taxiPathId);
+    MANGOS_ASSERT(m_currentNode < path.size() && "Current node doesn't exist in transport path.");
+
+    return path[m_currentNode];
+}
+
+Movement::Location GOTransportBase::ComputePosition()
+{
+    float u = 1.f;
+    int32 seg_time = m_transportSpline->length(m_pointIdx, m_pointIdx + 1);
+    if (seg_time > 0)
+        u = (m_timePassed - m_transportSpline->length(m_pointIdx)) / (float)seg_time;
+    Movement::Location c;
+    m_transportSpline->evaluate_percent(m_pointIdx, u, c);
+
+    G3D::Vector3 hermite;
+    m_transportSpline->evaluate_derivative(m_pointIdx, u, hermite);
+    c.orientation = atan2(hermite.y, hermite.x);
+
+    return c;
+}
+
+/*void GOTransportBase::LoadTransportPath(uint32 pathId)
+{
+    Movement::MoveSplineInitArgs args;
+    args.flags = Movement::MoveSplineFlag(Movement::MoveSplineFlag::Catmullrom);
+    args.velocity = ((GameObject*)m_owner)->GetGOInfo()->moTransport.moveSpeed;
+
+    TaxiPathNodeList const& path = sTransportMgr.GetTaxiPathNodeList(pathId);
+    uint32 stopDuration = 0;
+
+    Movement::MoveSplineInitArgs args2;
+    args2.flags = Movement::MoveSplineFlag(Movement::MoveSplineFlag::Catmullrom);
+    args2.velocity = ((GameObject*)m_owner)->GetGOInfo()->moTransport.moveSpeed;
+    Movement::MoveSpline* spline2TEST = new Movement::MoveSpline();
+    uint32 stopDuration2 = 0;
+
+    for (uint32 i = 0; i < path.size(); ++i)
+    {
+        if (path[i].mapid == m_owner->GetMap()->GetId())
+        {
+            args.path.push_back(G3D::Vector3(path[i].x, path[i].y, path[i].z));
+
+            if (path[i].arrivalEventID || path[i].delay || path[i].departureEventID)
+            {
+                stopDuration += path[i].delay * 1000; // MS Time
+                m_transportStops.insert(TransportStopMap::value_type(args.path.size() - 1,
+                    TransportStop(path[i].arrivalEventID, path[i].delay * 1000, path[i].departureEventID)));
+            }
+        }
+        else
+        {
+            args2.path.push_back(G3D::Vector3(path[i].x, path[i].y, path[i].z));
+
+            if (path[i].arrivalEventID || path[i].delay || path[i].departureEventID)
+                stopDuration2 += path[i].delay * 1000; // MS Time
+        }
+    }
+
+    m_moveSpline->Initialize(args);
+    spline2TEST->Initialize(args2);
+
+    DEBUG_LOG("DURATION DER STRECKE1: %i", m_moveSpline->Duration() + stopDuration);
+    DEBUG_LOG("STOPDURATION1: %u", stopDuration);
+    DEBUG_LOG("DURATION DER STRECKE2: %i", spline2TEST->Duration() + stopDuration2);
+    DEBUG_LOG("STOPDURATION2: %u", stopDuration2);
+
+    // ToDo: Set period !correctly!
+    m_owner->SetUInt32Value(GAMEOBJECT_LEVEL, m_moveSpline->Duration() + stopDuration + spline2TEST->Duration() + stopDuration2);
+
+    delete spline2TEST;
+}*/
 
 /* **************************************** TransportInfo ****************************************/
 
