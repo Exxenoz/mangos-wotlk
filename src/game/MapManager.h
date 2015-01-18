@@ -26,7 +26,6 @@
 #include "Map.h"
 #include "GridStates.h"
 
-class Transport;
 class BattleGround;
 
 struct MapID
@@ -129,14 +128,6 @@ class MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockab
         }
 
         void RemoveAllObjectsInRemoveList();
-
-        void LoadTransports();
-
-        typedef std::set<Transport*> TransportSet;
-        TransportSet m_Transports;
-
-        typedef std::map<uint32, TransportSet> TransportMap;
-        TransportMap m_TransportsByMap;
 
         void InitializeVisibilityDistanceInfo();
 

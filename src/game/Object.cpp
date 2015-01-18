@@ -32,7 +32,6 @@
 #include "Util.h"
 #include "MapManager.h"
 #include "Log.h"
-#include "Transports.h"
 #include "TargetedMovementGenerator.h"
 #include "WaypointMovementGenerator.h"
 #include "VMapFactory.h"
@@ -252,16 +251,6 @@ void Object::BuildMovementUpdate(ByteBuffer* data, uint16 updateFlags) const
     if (updateFlags & UPDATEFLAG_LIVING)
     {
         Unit* unit = ((Unit*)this);
-
-        // ToDo: Remove this hack
-        if (GetTypeId() == TYPEID_PLAYER)
-        {
-            Player* player = ((Player*)unit);
-            if (player->GetTransport() || player->IsBoarded())
-                player->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
-            else
-                player->m_movementInfo.RemoveMovementFlag(MOVEFLAG_ONTRANSPORT);
-        }
 
         // Update movement info time
         unit->m_movementInfo.UpdateTime(WorldTimer::getMSTime());

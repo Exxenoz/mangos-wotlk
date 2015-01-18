@@ -47,7 +47,6 @@
 #include "GuildMgr.h"
 #include "Pet.h"
 #include "Util.h"
-#include "Transports.h"
 #include "Weather.h"
 #include "BattleGround/BattleGround.h"
 #include "BattleGround/BattleGroundMgr.h"
@@ -394,8 +393,6 @@ UpdateMask Player::updateVisualBits;
 
 Player::Player(WorldSession* session): Unit(), m_mover(this), m_camera(this), m_achievementMgr(this), m_reputationMgr(this)
 {
-    m_transport = 0;
-
     m_speakTime = 0;
     m_speakCount = 0;
 
@@ -599,11 +596,6 @@ Player::~Player()
         delete iter->second;                                // if item is duplicated... then server may crash ... but that item should be deallocated
 
     delete PlayerTalkClass;
-
-    if (m_transport)
-    {
-        m_transport->RemovePassenger(this);
-    }
 
     for (size_t x = 0; x < ItemSetEff.size(); ++x)
         delete ItemSetEff[x];
@@ -1693,7 +1685,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             // TODO - Assume a player with expansion 0 travels from BootyBay to Ratched, and he is attempted to be teleported to outlands
             //        then he will repop near BootyBay instead of normally continuing his journey
             // This code is probably added to catch passengers on ships to northrend who shouldn't go there
-            if (lockStatus == AREA_LOCKSTATUS_INSUFFICIENT_EXPANSION && !assignedAreaTrigger && GetTransport())
+            if (lockStatus == AREA_LOCKSTATUS_INSUFFICIENT_EXPANSION && !assignedAreaTrigger && IsOnMOTransport())
                 RepopAtGraveyard();                         // Teleport to near graveyard if on transport, looks blizz like :)
 
             SendTransferAbortedByLockStatus(mEntry, lockStatus, miscRequirement);
@@ -1703,14 +1695,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 
     if (Group* grp = GetGroup())                            // TODO: Verify that this is correct place
         grp->SetPlayerMap(GetObjectGuid(), mapid);
-
-    // if we were on a transport, leave
-    if (!(options & TELE_TO_NOT_LEAVE_TRANSPORT) && m_transport)
-    {
-        m_transport->RemovePassenger(this);
-        m_transport = nullptr;
-        m_movementInfo.ClearTransportData();
-    }
 
     // The player was ported to another map and looses the duel immediately.
     // We have to perform this check before the teleport, otherwise the
@@ -1723,7 +1707,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
     DisableSpline();
 
-    if ((GetMapId() == mapid) && (!m_transport))            // TODO the !m_transport might have unexpected effects when teleporting from transport to other place on same map
+    if ((GetMapId() == mapid))
     {
         // lets reset far teleport flag if it wasn't reset during chained teleports
         SetSemaphoreTeleportFar(false);
@@ -1826,19 +1810,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             // remove auras before removing from map...
             RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_CHANGE_MAP | AURA_INTERRUPT_FLAG_MOVE | AURA_INTERRUPT_FLAG_TURNING);
 
-            if (!GetSession()->PlayerLogout())
-            {
-                // send transfer packet to display load screen
-                WorldPacket data(SMSG_TRANSFER_PENDING, (4 + 4 + 4));
-                data << uint32(mapid);
-                if (m_transport)
-                {
-                    data << uint32(m_transport->GetEntry());
-                    data << uint32(GetMapId());
-                }
-                GetSession()->SendPacket(&data);
-            }
-
             // remove from old map now
             if (oldmap)
                 oldmap->Remove(this, false);
@@ -1848,16 +1819,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             float final_y = y;
             float final_z = z;
             float final_o = orientation;
-
-            Position const* transportPosition = m_movementInfo.GetTransportPos();
-
-            if (m_transport)
-            {
-                final_x += transportPosition->x;
-                final_y += transportPosition->y;
-                final_z += transportPosition->z;
-                final_o += transportPosition->o;
-            }
 
             m_teleport_dest = WorldLocation(mapid, final_x, final_y, final_z, final_o);
             SetFallInformation(0, final_z);
@@ -1873,20 +1834,10 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                 // transfer finished, inform client to start load
                 WorldPacket data(SMSG_NEW_WORLD, (20));
                 data << uint32(mapid);
-                if (m_transport)
-                {
-                    data << float(transportPosition->x);
-                    data << float(transportPosition->y);
-                    data << float(transportPosition->z);
-                    data << float(transportPosition->o);
-                }
-                else
-                {
-                    data << float(final_x);
-                    data << float(final_y);
-                    data << float(final_z);
-                    data << float(final_o);
-                }
+                data << float(final_x);
+                data << float(final_y);
+                data << float(final_z);
+                data << float(final_o);
 
                 GetSession()->SendPacket(&data);
                 SendSavedInstances();
@@ -4914,7 +4865,7 @@ void Player::RepopAtGraveyard()
     AreaTableEntry const* zone = GetAreaEntryByAreaID(GetAreaId());
 
     // Such zones are considered unreachable as a ghost and the player must be automatically revived
-    if ((!isAlive() && zone && zone->flags & AREA_FLAG_NEED_FLY) || GetTransport())
+    if (!isAlive() && zone && zone->flags & AREA_FLAG_NEED_FLY)
     {
         ResurrectPlayer(0.5f);
         SpawnCorpseBones();
@@ -15230,72 +15181,12 @@ bool Player::LoadFromDB(ObjectGuid guid, SqlQueryHolder* holder)
         }
     }
 
-    if (transGUID != 0)
+    MapEntry const* mapEntry = sMapStore.LookupEntry(GetMapId());
+    // client without expansion support
+    if (GetSession()->Expansion() < mapEntry->Expansion())
     {
-        m_movementInfo.SetTransportData(ObjectGuid(HIGHGUID_MO_TRANSPORT, transGUID), fields[26].GetFloat(), fields[27].GetFloat(), fields[28].GetFloat(), fields[29].GetFloat(), 0, -1);
-
-        Position const* transportPosition = m_movementInfo.GetTransportPos();
-
-        if (!MaNGOS::IsValidMapCoord(
-                    GetPositionX() + transportPosition->x, GetPositionY() + transportPosition->y,
-                    GetPositionZ() + transportPosition->z, GetOrientation() + transportPosition->o) ||
-                // transport size limited
-                transportPosition->x > 50 || transportPosition->y > 50 || transportPosition->z > 50)
-        {
-            sLog.outError("%s have invalid transport coordinates (X: %f Y: %f Z: %f O: %f). Teleport to default race/class locations.",
-                          guid.GetString().c_str(), GetPositionX() + transportPosition->x, GetPositionY() + transportPosition->y,
-                          GetPositionZ() + transportPosition->z, GetOrientation() + transportPosition->o);
-
-            RelocateToHomebind();
-
-            m_movementInfo.ClearTransportData();
-
-            transGUID = 0;
-        }
-    }
-
-    if (transGUID != 0)
-    {
-        for (MapManager::TransportSet::const_iterator iter = sMapMgr.m_Transports.begin(); iter != sMapMgr.m_Transports.end(); ++iter)
-        {
-            if ((*iter)->GetGUIDLow() == transGUID)
-            {
-                MapEntry const* transMapEntry = sMapStore.LookupEntry((*iter)->GetMapId());
-                // client without expansion support
-                if (GetSession()->Expansion() < transMapEntry->Expansion())
-                {
-                    DEBUG_LOG("Player %s using client without required expansion tried login at transport at non accessible map %u", GetName(), (*iter)->GetMapId());
-                    break;
-                }
-
-                m_transport = *iter;
-                m_transport->AddPassenger(this);
-                SetLocationMapId(m_transport->GetMapId());
-                break;
-            }
-        }
-
-        if (!m_transport)
-        {
-            sLog.outError("%s have problems with transport guid (%u). Teleport to default race/class locations.",
-                          guid.GetString().c_str(), transGUID);
-
-            RelocateToHomebind();
-
-            m_movementInfo.ClearTransportData();
-
-            transGUID = 0;
-        }
-    }
-    else                                                    // not transport case
-    {
-        MapEntry const* mapEntry = sMapStore.LookupEntry(GetMapId());
-        // client without expansion support
-        if (GetSession()->Expansion() < mapEntry->Expansion())
-        {
-            DEBUG_LOG("Player %s using client without required expansion tried login at non accessible map %u", GetName(), GetMapId());
-            RelocateToHomebind();
-        }
+        DEBUG_LOG("Player %s using client without required expansion tried login at non accessible map %u", GetName(), GetMapId());
+        RelocateToHomebind();
     }
 
     // player bounded instance saves loaded in _LoadBoundInstances, group versions at group loading
@@ -16890,10 +16781,7 @@ void Player::SaveToDB()
     uberInsert.addFloat(finiteAlways(transportPosition->z));
     uberInsert.addFloat(finiteAlways(transportPosition->o));
 
-    if (m_transport)
-        uberInsert.addUInt32(m_transport->GetGUIDLow());
-    else
-        uberInsert.addUInt32(0);
+    uberInsert.addUInt32(0);
 
     uberInsert.addUInt32(m_ExtraFlags);
 
@@ -20983,7 +20871,7 @@ void Player::UpdateUnderwaterState(Map* m, float x, float y, float z)
     }
 
     // Allow travel in dark water on taxi or transport
-    if ((liquid_status.type_flags & MAP_LIQUID_TYPE_DARK_WATER) && !IsTaxiFlying() && !GetTransport())
+    if ((liquid_status.type_flags & MAP_LIQUID_TYPE_DARK_WATER) && !IsTaxiFlying() && !IsOnMOTransport())
         m_MirrorTimerFlags |= UNDERWATER_INDARKWATER;
     else
         m_MirrorTimerFlags &= ~UNDERWATER_INDARKWATER;

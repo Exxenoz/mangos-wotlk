@@ -26,7 +26,6 @@
 #include "Vehicle.h"
 #include "SpellAuras.h"
 #include "MapManager.h"
-#include "Transports.h"
 #include "BattleGround/BattleGround.h"
 #include "WaypointMovementGenerator.h"
 #include "MapPersistentStateMgr.h"
@@ -352,7 +351,7 @@ void WorldSession::HandleForceSpeedChangeAckOpcodes(WorldPacket& recv_data)
             return;
     }
 
-    if (!_player->GetTransport() && fabs(_player->GetSpeed(move_type) - newspeed) > 0.01f)
+    if (fabs(_player->GetSpeed(move_type) - newspeed) > 0.01f)
     {
         if (_player->GetSpeed(move_type) > newspeed)        // must be greater - just correct
         {
@@ -545,29 +544,6 @@ void WorldSession::HandleMoverRelocation(MovementInfo& movementInfo)
 
     if (Player* plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : nullptr)
     {
-        if (movementInfo.HasMovementFlag(MOVEFLAG_ONTRANSPORT))
-        {
-            if (!plMover->m_transport)
-            {
-                // elevators also cause the client to send MOVEFLAG_ONTRANSPORT - just unmount if the guid can be found in the transport list
-                for (MapManager::TransportSet::const_iterator iter = sMapMgr.m_Transports.begin(); iter != sMapMgr.m_Transports.end(); ++iter)
-                {
-                    if ((*iter)->GetObjectGuid() == movementInfo.GetTransportGuid())
-                    {
-                        plMover->m_transport = (*iter);
-                        (*iter)->AddPassenger(plMover);
-                        break;
-                    }
-                }
-            }
-        }
-        else if (plMover->m_transport)               // if we were on a transport, leave
-        {
-            plMover->m_transport->RemovePassenger(plMover);
-            plMover->m_transport = nullptr;
-            movementInfo.ClearTransportData();
-        }
-
         if (movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING) != plMover->IsInWater())
         {
             // now client not include swimming flag in case jumping under water
