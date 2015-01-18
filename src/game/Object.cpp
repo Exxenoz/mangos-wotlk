@@ -1042,6 +1042,18 @@ void WorldObject::_Create(uint32 guidlow, HighGuid guidhigh, uint32 phaseMask)
     m_phaseMask = phaseMask;
 }
 
+bool WorldObject::IsOnVehicle() const
+{
+    return m_transportInfo != NULL &&
+           m_transportInfo->IsOnVehicle();
+}
+
+bool WorldObject::IsOnMOTransport() const
+{
+    return m_transportInfo != NULL &&
+           m_transportInfo->IsOnMOTransport();
+}
+
 void WorldObject::Relocate(float x, float y, float z, float orientation)
 {
     m_position.x = x;

@@ -451,6 +451,9 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         bool IsBoarded() const { return m_transportInfo != nullptr; }
         void SetTransportInfo(TransportInfo* transportInfo) { m_transportInfo = transportInfo; }
 
+        bool IsOnMOTransport() const; // Wrapper
+        bool IsOnVehicle() const; // Wrapper
+
         void Relocate(float x, float y, float z, float orientation);
         void Relocate(float x, float y, float z);
 
