@@ -167,7 +167,8 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, uint32 phaseMa
     SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
     SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
 
-    if (goinfo->type == GAMEOBJECT_TYPE_TRANSPORT)
+    if (goinfo->type == GAMEOBJECT_TYPE_TRANSPORT ||
+        goinfo->type == GAMEOBJECT_TYPE_MO_TRANSPORT)
         SetFlag(GAMEOBJECT_FLAGS, (GO_FLAG_TRANSPORT | GO_FLAG_NODESPAWN));
 
     SetEntry(goinfo->id);
