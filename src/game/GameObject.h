@@ -603,6 +603,7 @@ enum CapturePointSliderValue
 
 class Unit;
 class GameObjectModel;
+class GOTransportBase;
 struct GameObjectDisplayInfoEntry;
 
 // 5 sec for bobber catch
@@ -769,6 +770,8 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         float GetInteractionDistance();
 
+        GOTransportBase* GetTransportBase() const { return m_transportBase; }
+
         GridReference<GameObject>& GetGridRef() { return m_gridRef; }
 
         GameObjectModel* m_model;
@@ -813,6 +816,9 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         void TickCapturePoint();
         void UpdateModel();                                 // updates model in case displayId were changed
         void UpdateCollisionState() const;                  // updates state in Map's dynamic collision tree
+
+        void InitiateTransporter(uint32 pathId);
+        GOTransportBase* m_transportBase;
 
         GridReference<GameObject> m_gridRef;
 };

@@ -42,6 +42,7 @@
 #include "vmap/GameObjectModel.h"
 #include "SQLStorages.h"
 #include <G3D/Quat.h>
+#include "TransportSystem.h"
 
 GameObject::GameObject() : WorldObject(),
     m_model(nullptr),
@@ -70,11 +71,14 @@ GameObject::GameObject() : WorldObject(),
     m_isInUse = false;
     m_reStockTimer = 0;
     m_despawnTimer = 0;
+
+    m_transportBase = NULL;
 }
 
 GameObject::~GameObject()
 {
     delete m_model;
+    delete m_transportBase;
 }
 
 void GameObject::AddToWorld()
@@ -186,6 +190,9 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, uint32 phaseMa
         case GAMEOBJECT_TYPE_FISHINGNODE:
             m_lootState = GO_NOT_READY;                     // Initialize Traps and Fishingnode delayed in ::Update
             break;
+        case GAMEOBJECT_TYPE_MO_TRANSPORT:                  // ToDo: Elevators and such need a similar implementation
+            InitiateTransporter(goinfo->moTransport.taxiPathId);
+            break;
         case GAMEOBJECT_TYPE_DESTRUCTIBLE_BUILDING:
             ForceGameObjectHealth(GetMaxHealth(), nullptr);
             break;
@@ -210,13 +217,11 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, uint32 phaseMa
 
 void GameObject::Update(uint32 update_diff, uint32 p_time)
 {
-    if (GetObjectGuid().IsMOTransport())
+    if (m_transportBase)
     {
-        //((Transport*)this)->Update(p_time);
-        return;
+        m_transportBase->Update(update_diff);
     }
-
-    switch (m_lootState)
+    else switch (m_lootState)
     {
         case GO_NOT_READY:
         {
@@ -2383,4 +2388,18 @@ void GameObject::SetInUse(bool use)
         SetGoState(GO_STATE_ACTIVE);
     else
         SetGoState(GO_STATE_READY);
+}
+
+void GameObject::InitiateTransporter(uint32 pathId)
+{
+    MANGOS_ASSERT(!m_transportBase && GetMap());
+
+    // low part always 0, dynamicHighValue is some kind of progression (not implemented)
+    SetUInt16Value(GAMEOBJECT_DYNAMIC, 0, 0);
+    SetUInt16Value(GAMEOBJECT_DYNAMIC, 1, 0 /*dynamicHighValue*/);
+
+    m_transportBase = new GOTransportBase(this, pathId);
+
+    m_updateFlag |= UPDATEFLAG_TRANSPORT;
+    m_updateFlag &= ~UPDATEFLAG_POSITION;
 }
