@@ -89,46 +89,14 @@ void TransportMgr::InsertTransporter(GameObjectInfo const* goInfo)
     m_staticTransportInfos.insert(StaticTransportInfoMap::value_type(goInfo->id, transportInfo));
 }
 
-void TransportMgr::InitializeTransporters()
-{
-    for (StaticTransportInfoMap::const_iterator itr = m_staticTransportInfos.begin(); itr != m_staticTransportInfos.end(); ++itr)
-    {
-        // Start with first map
-        TransportSplineMap::const_iterator itr2 = itr->second.splines.begin();
-        MANGOS_ASSERT(itr2 != itr->second.splines.end());
-
-        MapEntry const* mapEntry = sMapStore.LookupEntry(itr2->first);
-        if (!mapEntry)
-        {
-            sLog.outError("Transporter could not be created because of an invalid mapId. Check DBC files.");
-            continue;
-        }
-
-        // Initialize only continental transporters
-        if (!mapEntry->IsContinent())
-            continue;
-
-        // ToDo: Maybe it's better to load all continental maps on server startup (before transport initialization) directly and use sMapMgr.FindMap() here instead
-        Map* continentalMap = sMapMgr.CreateMap(mapEntry->MapID, NULL);
-        MANGOS_ASSERT(continentalMap);
-
-        G3D::Vector3 const& startPos = itr2->second->getPoint(itr2->second->first());
-        CreateTransporter(itr->second.goInfo, continentalMap, startPos.x, startPos.y, startPos.z, itr->second.period);
-    }
-}
-
-void TransportMgr::LoadTransporterForInstanceMap(Map* map)
+void TransportMgr::LoadTransporterForMap(Map* map)
 {
     MANGOS_ASSERT(map);
-
-    // Continental MOTs must not be loaded here (They are already)
-    if (!map->Instanceable())
-        return;
 
     for (StaticTransportInfoMap::const_iterator itr = m_staticTransportInfos.begin(); itr != m_staticTransportInfos.end(); ++itr)
     {
         // Instance transporter must be always in one map. Note: This iterates over all transporters, hence we must check this way
-        if (itr->second.splines.size() == 1)
+        if (itr->second.splines.size() == 1 || map->IsContinent())
         {
             TransportSplineMap::const_iterator itr2 = itr->second.splines.find(map->GetId());
 

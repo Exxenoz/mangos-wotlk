@@ -47,6 +47,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
+#include "TransportMgr.h"
 
 #include <limits>
 #include "ItemEnchantmentMgr.h"
@@ -9078,6 +9079,7 @@ void ObjectMgr::LoadActiveEntities(Map* _map)
     }
 
     // Load Transports on Map _map
+    sTransportMgr.LoadTransporterForMap(_map);
 }
 
 void ObjectMgr::LoadNpcGossips()

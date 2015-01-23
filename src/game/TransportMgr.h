@@ -67,9 +67,8 @@ class TransportMgr                                          // Mgr to hold stati
         ~TransportMgr();
 
         void InsertTransporter(GameObjectInfo const* goInfo); // Called on GO-Loading, creates static data for this go
-        void InitializeTransporters();                      // Called from World. Starts Transporters on Continents
+        void LoadTransporterForMap(Map* map);                 // Called by ObjectMgr::LoadActiveEntities
 
-        void LoadTransporterForInstanceMap(Map* map);       // Called in Map constructor
         void ReachedLastWaypoint(GOTransportBase const* transportBase); // Called by GOTransportBase::Update when last waypoint is reached. Will trigger action for passengers
 
         Movement::Spline<int32> const* GetTransportSpline(uint32 goEntry, uint32 mapId);    // Get Static Waypoint Data for a transporter and map
