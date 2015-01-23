@@ -55,10 +55,6 @@ class TransportBase
         explicit TransportBase(WorldObject* owner);
         virtual ~TransportBase();
 
-        // Helper functions to add/ remove a passenger from the list
-        void BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo, uint8 seat);
-        void UnBoardPassenger(WorldObject* passenger);
-
         virtual void Update(uint32 diff);
         void UpdateGlobalPositions();
         void UpdateGlobalPositionOf(WorldObject* passenger, float lx, float ly, float lz, float lo) const;
@@ -76,6 +72,10 @@ class TransportBase
         bool HasOnBoard(WorldObject const* passenger) const;
 
     protected:
+        // Helper functions to add/ remove a passenger from the list
+        void BoardPassenger(WorldObject* passenger, float lx, float ly, float lz, float lo, uint8 seat);
+        void UnBoardPassenger(WorldObject* passenger);
+
         WorldObject* m_owner;                               ///< The transporting unit
         PassengerMap m_passengers;                          ///< List of passengers and their transport-information
 
