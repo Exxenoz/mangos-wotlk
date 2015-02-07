@@ -43,22 +43,7 @@ struct StaticTransportInfo                                                      
         goInfo(_goInfo), period(0) {}
 };
 
-// Track on which map a multi-map transport currently is
-struct DynamicTransportInfo                                                         // Class for what exactly, actually we only need to track the muli-map transports, rest is easy
-{
-    ObjectGuid transportGuid;
-    uint32 currentMapId; // ToDo: There is probably an issue with instance transports
-
-    // Standard constructor for std::map usage
-    DynamicTransportInfo() :
-        transportGuid(ObjectGuid()), currentMapId(0) {}
-
-    DynamicTransportInfo(ObjectGuid _transportGuid, uint32 _currentMapId) :
-        transportGuid(_transportGuid), currentMapId(_currentMapId) {}
-};
-
 typedef std::map < uint32 /*goEntry*/, StaticTransportInfo > StaticTransportInfoMap; // Static data by go-entry
-typedef std::map < uint32 /*goEntry*/, DynamicTransportInfo > DynamicTransportInfoMap; // dynamic data by go-entry
 
 class TransportMgr                                          // Mgr to hold static data and manage multi-map transports
 {
@@ -73,14 +58,11 @@ class TransportMgr                                          // Mgr to hold stati
 
         Movement::Spline<int32> const* GetTransportSpline(uint32 goEntry, uint32 mapId);    // Get Static Waypoint Data for a transporter and map
         TaxiPathNodeList const& GetTaxiPathNodeList(uint32 pathId);
-        ObjectGuid GetTransportGuid(uint32 entry);                                          // Get guid of current transporter
-        uint32 GetCurrentMapId(uint32 entry);                                               // Get current mapId of transporter
 
     private:
         GameObject* CreateTransporter(const GameObjectInfo* goInfo, Map* map, float x, float y, float z, uint32 period);
 
         StaticTransportInfoMap m_staticTransportInfos;
-        DynamicTransportInfoMap m_dynamicTransportInfos;
 };
 
 #define sTransportMgr MaNGOS::Singleton<TransportMgr>::Instance()

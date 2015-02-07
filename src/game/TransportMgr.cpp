@@ -198,26 +198,6 @@ TaxiPathNodeList const& TransportMgr::GetTaxiPathNodeList(uint32 pathId)
     return sTaxiPathNodesByPath[pathId];
 }
 
-ObjectGuid TransportMgr::GetTransportGuid(uint32 entry)
-{
-    DynamicTransportInfoMap::const_iterator itr = m_dynamicTransportInfos.find(entry);
-
-    if (itr == m_dynamicTransportInfos.end())
-        return ObjectGuid();
-
-    return itr->second.transportGuid;
-}
-
-uint32 TransportMgr::GetCurrentMapId(uint32 entry)
-{
-    DynamicTransportInfoMap::const_iterator itr = m_dynamicTransportInfos.find(entry);
-
-    if (itr == m_dynamicTransportInfos.end())
-        return 0;
-
-    return itr->second.currentMapId;
-}
-
 GameObject* TransportMgr::CreateTransporter(const GameObjectInfo* goInfo, Map* map, float x, float y, float z, uint32 period)
 {
     MANGOS_ASSERT(goInfo && map);
@@ -240,8 +220,6 @@ GameObject* TransportMgr::CreateTransporter(const GameObjectInfo* goInfo, Map* m
     transporter->SetUInt32Value(GAMEOBJECT_LEVEL, period);
     // Add the transporter to the map
     map->Add<GameObject>(transporter);
-    // Insert / Overwrite dynamic transport data
-    m_dynamicTransportInfos[goInfo->id] = DynamicTransportInfo(transporter->GetObjectGuid(), map->GetId());
 
 #ifdef DEBUG_SHOW_MOT_WAYPOINTS
     // Debug helper, view waypoints
