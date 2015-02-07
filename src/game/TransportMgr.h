@@ -33,17 +33,30 @@ class GOTransportBase;
 
 typedef std::map < uint32 /*mapId*/, Movement::Spline<int32>* > TransportSplineMap; // Waypoint path in mapId
 
-struct StaticTransportInfo                                                          // Static information for each transporter
+class TransportMgrInfo                                                              // Transport information for each transporter
 {
-    GameObjectInfo const* goInfo;                                                   // goInfo
-    TransportSplineMap splines;                                                     // Waypoints
-    uint32 period;                                                                  // period for one circle
+    public:
+        TransportMgrInfo(GameObjectInfo const* _goInfo);
+        ~TransportMgrInfo();
 
-    StaticTransportInfo(GameObjectInfo const* _goInfo) :
-        goInfo(_goInfo), period(0) {}
+        GameObjectInfo const* GetGameObjectInfo() { return m_goInfo; }
+        uint32 GetPeriod() { return m_period; }
+
+        Movement::Spline<int32>* GetTransportSplineForMapId(uint32 mapId);
+        uint32 GetNextMapId(uint32 currentMapId);
+
+        bool IsVisitingThisMap(uint32 mapId) { return m_waypoints.find(mapId) != m_waypoints.end(); }
+        bool IsMultiMapTransporter() { return m_waypoints.size() > 1; }
+
+    private:
+        void CalculateWaypoints();
+
+        GameObjectInfo const* m_goInfo;                                             // goInfo
+        TransportSplineMap m_waypoints;                                             // Waypoints
+        uint32 m_period;                                                            // period for one circle
 };
 
-typedef std::map < uint32 /*goEntry*/, StaticTransportInfo > StaticTransportInfoMap; // Static data by go-entry
+typedef std::map < uint32 /*goEntry*/, TransportMgrInfo* > TransportMgrInfoMap;     // TransportMgrInfo by go-entry
 
 class TransportMgr                                          // Mgr to hold static data and manage multi-map transports
 {
@@ -57,12 +70,12 @@ class TransportMgr                                          // Mgr to hold stati
         void ReachedLastWaypoint(GOTransportBase const* transportBase); // Called by GOTransportBase::Update when last waypoint is reached. Will trigger action for passengers
 
         Movement::Spline<int32> const* GetTransportSpline(uint32 goEntry, uint32 mapId);    // Get Static Waypoint Data for a transporter and map
-        TaxiPathNodeList const& GetTaxiPathNodeList(uint32 pathId);
+        static TaxiPathNodeList const& GetTaxiPathNodeList(uint32 pathId);
 
     private:
-        GameObject* CreateTransporter(const GameObjectInfo* goInfo, Map* map, float x, float y, float z, uint32 period);
+        GameObject* CreateTransporter(TransportMgrInfo* transportMgrInfo, Map* map);
 
-        StaticTransportInfoMap m_staticTransportInfos;
+        TransportMgrInfoMap m_transportMgrInfos;
 };
 
 #define sTransportMgr MaNGOS::Singleton<TransportMgr>::Instance()
