@@ -26,7 +26,7 @@ using namespace Movement;
 
 INSTANTIATE_SINGLETON_1(TransportMgr);
 
-TransportMgrInfo::TransportMgrInfo(GameObjectInfo const* _goInfo) :
+MassiveObjectTransportData::MassiveObjectTransportData(GameObjectInfo const* _goInfo) :
     m_goInfo(_goInfo),
     m_period(0),
     m_spawned(false)
@@ -34,14 +34,14 @@ TransportMgrInfo::TransportMgrInfo(GameObjectInfo const* _goInfo) :
     CalculateWaypoints();
 }
 
-TransportMgrInfo::~TransportMgrInfo()
+MassiveObjectTransportData::~MassiveObjectTransportData()
 {
     // Delete splines
     for (TransportSplineMap::const_iterator itr = m_waypoints.begin(); itr != m_waypoints.end(); ++itr)
         delete itr->second;
 }
 
-Movement::Spline<int32>* TransportMgrInfo::GetTransportSplineForMapId(uint32 mapId)
+Movement::Spline<int32>* MassiveObjectTransportData::GetTransportSplineForMapId(uint32 mapId)
 {
     TransportSplineMap::const_iterator itr = m_waypoints.find(mapId);
     MANGOS_ASSERT(itr != m_waypoints.end());
@@ -49,7 +49,7 @@ Movement::Spline<int32>* TransportMgrInfo::GetTransportSplineForMapId(uint32 map
     return itr->second;
 }
 
-uint32 TransportMgrInfo::GetNextMapId(uint32 currentMapId)
+uint32 MassiveObjectTransportData::GetNextMapId(uint32 currentMapId)
 {
     TransportSplineMap::const_iterator itr = m_waypoints.find(currentMapId);
     MANGOS_ASSERT(itr != m_waypoints.end());
@@ -62,7 +62,7 @@ uint32 TransportMgrInfo::GetNextMapId(uint32 currentMapId)
     return itr->first;
 }
 
-void TransportMgrInfo::CalculateWaypoints()
+void MassiveObjectTransportData::CalculateWaypoints()
 {
     MANGOS_ASSERT(m_goInfo && m_goInfo->type == GAMEOBJECT_TYPE_MO_TRANSPORT && m_goInfo->moTransport.taxiPathId < sTaxiPathNodesByPath.size());
 
@@ -117,24 +117,24 @@ void TransportMgrInfo::CalculateWaypoints()
 TransportMgr::~TransportMgr()
 {
     // Delete transport infos
-    for (TransportMgrInfoMap::const_iterator itr = m_transportMgrInfos.begin(); itr != m_transportMgrInfos.end(); ++itr)
+    for (MassiveObjectTransportDataMap::const_iterator itr = m_massiveObjectTransportData.begin(); itr != m_massiveObjectTransportData.end(); ++itr)
         delete itr->second;
 }
 
-void TransportMgr::InsertTransporter(GameObjectInfo const* goInfo)
+void TransportMgr::AddMassiveObjectTransportData(GameObjectInfo const* goInfo)
 {
     MANGOS_ASSERT(goInfo);
 
-    TransportMgrInfo* transportMgrInfo = new TransportMgrInfo(goInfo);
+    MassiveObjectTransportData* massiveObjectTransportData = new MassiveObjectTransportData(goInfo);
 
-    m_transportMgrInfos.insert(TransportMgrInfoMap::value_type(goInfo->id, transportMgrInfo));
+    m_massiveObjectTransportData.insert(MassiveObjectTransportDataMap::value_type(goInfo->id, massiveObjectTransportData));
 }
 
-void TransportMgr::LoadTransporterForMap(Map* map)
+void TransportMgr::LoadMassiveObjectTransporterForMap(Map* map)
 {
     MANGOS_ASSERT(map);
 
-    for (TransportMgrInfoMap::const_iterator itr = m_transportMgrInfos.begin(); itr != m_transportMgrInfos.end(); ++itr)
+    for (MassiveObjectTransportDataMap::const_iterator itr = m_massiveObjectTransportData.begin(); itr != m_massiveObjectTransportData.end(); ++itr)
     {
         if ((!itr->second->IsSpawned() || map->Instanceable()) && itr->second->IsVisitingThisMap(map->GetId()))
         {
@@ -153,8 +153,8 @@ void TransportMgr::ReachedLastWaypoint(MassiveObjectTransportBase const* transpo
 
     MANGOS_ASSERT(transportBase && transportBase->GetOwner()->GetObjectGuid().IsMOTransport());
 
-    TransportMgrInfoMap::const_iterator itr = m_transportMgrInfos.find(transportBase->GetOwner()->GetEntry());
-    MANGOS_ASSERT(itr != m_transportMgrInfos.end());
+    MassiveObjectTransportDataMap::const_iterator itr = m_massiveObjectTransportData.find(transportBase->GetOwner()->GetEntry());
+    MANGOS_ASSERT(itr != m_massiveObjectTransportData.end());
 
     // Transporter that only move on one map don't need multi-map teleportation
     if (!itr->second->IsMultiMapTransporter())
@@ -209,9 +209,9 @@ void TransportMgr::ReachedLastWaypoint(MassiveObjectTransportBase const* transpo
 
 Movement::Spline<int32> const* TransportMgr::GetTransportSpline(uint32 goEntry, uint32 mapId)
 {
-    TransportMgrInfoMap::const_iterator itr = m_transportMgrInfos.find(goEntry);
+    MassiveObjectTransportDataMap::const_iterator itr = m_massiveObjectTransportData.find(goEntry);
 
-    if (itr == m_transportMgrInfos.end())
+    if (itr == m_massiveObjectTransportData.end())
         return NULL;
 
     return itr->second->GetTransportSplineForMapId(mapId);
@@ -223,13 +223,13 @@ TaxiPathNodeList const& TransportMgr::GetTaxiPathNodeList(uint32 pathId)
     return sTaxiPathNodesByPath[pathId];
 }
 
-GameObject* TransportMgr::CreateTransporter(TransportMgrInfo* transportMgrInfo, Map* map)
+GameObject* TransportMgr::CreateTransporter(MassiveObjectTransportData* massiveObjectTransportData, Map* map)
 {
-    MANGOS_ASSERT(transportMgrInfo && map);
+    MANGOS_ASSERT(massiveObjectTransportData && map);
 
-    GameObjectInfo const* goInfo = transportMgrInfo->GetGameObjectInfo();
+    GameObjectInfo const* goInfo = massiveObjectTransportData->GetGameObjectInfo();
 
-    Movement::Spline<int32>* startSpline = transportMgrInfo->GetTransportSplineForMapId(map->GetId());
+    Movement::Spline<int32>* startSpline = massiveObjectTransportData->GetTransportSplineForMapId(map->GetId());
     G3D::Vector3 const& startPos = startSpline->getPoint(startSpline->first());
 
     DEBUG_LOG("Create transporter %s, map %u", goInfo->name, map->GetId());
@@ -247,7 +247,7 @@ GameObject* TransportMgr::CreateTransporter(TransportMgrInfo* transportMgrInfo, 
     // Most massive object transporter are always active objects
     transporter->SetActiveObjectState(true);
     // Set period
-    transporter->SetUInt32Value(GAMEOBJECT_LEVEL, transportMgrInfo->GetPeriod());
+    transporter->SetUInt32Value(GAMEOBJECT_LEVEL, massiveObjectTransportData->GetPeriod());
     // Add the transporter to the map
     map->Add<GameObject>(transporter);
 
@@ -259,7 +259,7 @@ GameObject* TransportMgr::CreateTransporter(TransportMgrInfo* transportMgrInfo, 
         if (path[i].mapid != map->GetId())
             continue;
 
-        if (Creature* pSummoned = transporter->SummonCreature(1, path[i].x, path[i].y, path[i].z + 30.0f, 0.0f, TEMPSUMMON_TIMED_DESPAWN, transportMgrInfo->GetPeriod(), true))
+        if (Creature* pSummoned = transporter->SummonCreature(1, path[i].x, path[i].y, path[i].z + 30.0f, 0.0f, TEMPSUMMON_TIMED_DESPAWN, massiveObjectTransportData->GetPeriod(), true))
             pSummoned->SetObjectScale(1.0f + (path.size() - i) * 1.0f);
     }
     // Debug helper, yell a bit

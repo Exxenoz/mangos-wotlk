@@ -33,11 +33,11 @@ class MassiveObjectTransportBase;
 
 typedef std::map < uint32 /*mapId*/, Movement::Spline<int32>* > TransportSplineMap; // Waypoint path in mapId
 
-class TransportMgrInfo                                                              // Transport information for each transporter
+class MassiveObjectTransportData                                                    // Transport data for each massive object transporter
 {
     public:
-        TransportMgrInfo(GameObjectInfo const* _goInfo);
-        ~TransportMgrInfo();
+        MassiveObjectTransportData(GameObjectInfo const* _goInfo);
+        ~MassiveObjectTransportData();
 
         GameObjectInfo const* GetGameObjectInfo() { return m_goInfo; }
         uint32 GetPeriod() { return m_period; }
@@ -61,7 +61,7 @@ class TransportMgrInfo                                                          
         bool m_spawned;                                                             // avoids creation of multiple multi-map transporter
 };
 
-typedef std::map < uint32 /*goEntry*/, TransportMgrInfo* > TransportMgrInfoMap;     // TransportMgrInfo by go-entry
+typedef std::map < uint32 /*goEntry*/, MassiveObjectTransportData* > MassiveObjectTransportDataMap; // MassiveObjectTransportData by go-entry
 
 class TransportMgr                                          // Mgr to hold static data and manage multi-map transports
 {
@@ -71,17 +71,17 @@ class TransportMgr                                          // Mgr to hold stati
         TransportMgr() {}
         ~TransportMgr();
 
-        void InsertTransporter(GameObjectInfo const* goInfo); // Called on GO-Loading, creates static data for this go
-        void LoadTransporterForMap(Map* map);                 // Called by ObjectMgr::LoadActiveEntities
+        void AddMassiveObjectTransportData(GameObjectInfo const* goInfo);  // Called on GO-Loading, creates static data for this go
+        void LoadMassiveObjectTransporterForMap(Map* map);                 // Called by ObjectMgr::LoadActiveEntities
 
         Movement::Spline<int32> const* GetTransportSpline(uint32 goEntry, uint32 mapId);    // Get Static Waypoint Data for a transporter and map
         static TaxiPathNodeList const& GetTaxiPathNodeList(uint32 pathId);
 
     private:
-        GameObject* CreateTransporter(TransportMgrInfo* transportMgrInfo, Map* map);
+        GameObject* CreateTransporter(MassiveObjectTransportData* massiveObjectTransportData, Map* map);
         void ReachedLastWaypoint(MassiveObjectTransportBase const* transportBase); // Called by MassiveObjectTransportBase::Update when last waypoint is reached. Will trigger action for passengers
 
-        TransportMgrInfoMap m_transportMgrInfos;
+        MassiveObjectTransportDataMap m_massiveObjectTransportData;
 };
 
 #define sTransportMgr MaNGOS::Singleton<TransportMgr>::Instance()
