@@ -147,7 +147,7 @@ void TransportMgr::LoadTransporterForMap(Map* map)
     }
 }
 
-void TransportMgr::ReachedLastWaypoint(GOTransportBase const* transportBase)
+void TransportMgr::ReachedLastWaypoint(MassiveObjectTransportBase const* transportBase)
 {
     DEBUG_LOG("TransportMgr: Transporter %u reached last waypoint on map %u", transportBase->GetOwner()->GetEntry(), transportBase->GetOwner()->GetMapId());
 

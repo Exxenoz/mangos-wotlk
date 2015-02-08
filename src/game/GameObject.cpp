@@ -191,7 +191,7 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, uint32 phaseMa
             m_lootState = GO_NOT_READY;                     // Initialize Traps and Fishingnode delayed in ::Update
             break;
         case GAMEOBJECT_TYPE_MO_TRANSPORT:                  // ToDo: Elevators and such need a similar implementation
-            InitiateMassiveObjectTransporter(goinfo->moTransport.taxiPathId);
+            InitiateMassiveObjectTransporter();
             break;
         case GAMEOBJECT_TYPE_DESTRUCTIBLE_BUILDING:
             ForceGameObjectHealth(GetMaxHealth(), nullptr);
@@ -2390,7 +2390,7 @@ void GameObject::SetInUse(bool use)
         SetGoState(GO_STATE_READY);
 }
 
-void GameObject::InitiateMassiveObjectTransporter(uint32 pathId)
+void GameObject::InitiateMassiveObjectTransporter()
 {
     MANGOS_ASSERT(!m_transportBase && GetMap());
 
@@ -2398,7 +2398,7 @@ void GameObject::InitiateMassiveObjectTransporter(uint32 pathId)
     SetUInt16Value(GAMEOBJECT_DYNAMIC, 0, 0);
     SetUInt16Value(GAMEOBJECT_DYNAMIC, 1, 0 /*dynamicHighValue*/);
 
-    m_transportBase = new MassiveObjectTransportBase(this, pathId);
+    m_transportBase = new MassiveObjectTransportBase(this);
 
     m_updateFlag |= UPDATEFLAG_TRANSPORT;
     m_updateFlag &= ~UPDATEFLAG_POSITION;

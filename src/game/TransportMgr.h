@@ -29,7 +29,7 @@ namespace Movement
     template<typename length_type> class Spline;
 };
 
-class GOTransportBase;
+class MassiveObjectTransportBase;
 
 typedef std::map < uint32 /*mapId*/, Movement::Spline<int32>* > TransportSplineMap; // Waypoint path in mapId
 
@@ -65,6 +65,8 @@ typedef std::map < uint32 /*goEntry*/, TransportMgrInfo* > TransportMgrInfoMap; 
 
 class TransportMgr                                          // Mgr to hold static data and manage multi-map transports
 {
+    friend class MassiveObjectTransportBase;
+
     public:
         TransportMgr() {}
         ~TransportMgr();
@@ -72,13 +74,12 @@ class TransportMgr                                          // Mgr to hold stati
         void InsertTransporter(GameObjectInfo const* goInfo); // Called on GO-Loading, creates static data for this go
         void LoadTransporterForMap(Map* map);                 // Called by ObjectMgr::LoadActiveEntities
 
-        void ReachedLastWaypoint(GOTransportBase const* transportBase); // Called by GOTransportBase::Update when last waypoint is reached. Will trigger action for passengers
-
         Movement::Spline<int32> const* GetTransportSpline(uint32 goEntry, uint32 mapId);    // Get Static Waypoint Data for a transporter and map
         static TaxiPathNodeList const& GetTaxiPathNodeList(uint32 pathId);
 
     private:
         GameObject* CreateTransporter(TransportMgrInfo* transportMgrInfo, Map* map);
+        void ReachedLastWaypoint(MassiveObjectTransportBase const* transportBase); // Called by MassiveObjectTransportBase::Update when last waypoint is reached. Will trigger action for passengers
 
         TransportMgrInfoMap m_transportMgrInfos;
 };

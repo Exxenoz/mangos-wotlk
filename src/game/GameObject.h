@@ -817,7 +817,7 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         void UpdateModel();                                 // updates model in case displayId were changed
         void UpdateCollisionState() const;                  // updates state in Map's dynamic collision tree
 
-        void InitiateMassiveObjectTransporter(uint32 pathId);
+        void InitiateMassiveObjectTransporter();
         GOTransportBase* m_transportBase;
 
         GridReference<GameObject> m_gridRef;

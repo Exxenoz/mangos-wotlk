@@ -234,8 +234,9 @@ void GOTransportBase::Update(uint32 diff)
 
 /* ********************************* MassiveObjectTransportBase *********************************/
 
-MassiveObjectTransportBase::MassiveObjectTransportBase(GameObject* owner, uint32 pathId) :
+MassiveObjectTransportBase::MassiveObjectTransportBase(GameObject* owner) :
     GOTransportBase(owner),
+    m_transportSpline(NULL),
     m_transportStopTimer(0),
     m_currentNode(0),
     m_pointIdx(0),
@@ -244,7 +245,10 @@ MassiveObjectTransportBase::MassiveObjectTransportBase(GameObject* owner, uint32
     m_bArrived(false),
     m_bInitialized(false)
 {
-    LoadTransportSpline();
+    m_transportSpline = sTransportMgr.GetTransportSpline(m_owner->GetEntry(), m_owner->GetMap()->GetId());
+    MANGOS_ASSERT(owner->GetObjectGuid().IsMOTransport() && m_transportSpline);
+
+    m_pointIdx = m_transportSpline->first();
 }
 
 void MassiveObjectTransportBase::Update(uint32 diff)
@@ -265,12 +269,7 @@ void MassiveObjectTransportBase::Update(uint32 diff)
         if (m_transportStopTimer < diff)
         {
             m_transportStopTimer = 0;
-
-            // Handle departure event
-            //TaxiPathNodeEntry const& node = GetCurrentNode();
-
-            //if (node.departureEventID)
-                //DoEventIfAny(player, m_currentNode, departureEvent);
+            // ToDo: Handle departure event
         }
         else
         {
@@ -301,17 +300,15 @@ void MassiveObjectTransportBase::Update(uint32 diff)
         m_updatePositionsTimer -= diff;
 
     uint32 pointId = (uint32)m_pointIdx - m_transportSpline->first() + (int)m_bArrived;
+
     if (pointId > m_currentNode)
     {
         do
         {
             ++m_currentNode;
 
-            // Handle arrival event
             TaxiPathNodeEntry const& node = GetCurrentNode();
-
-            //if (node.arrivalEventID)
-                //DoEventIfAny(player, m_currentNode, arrivalEvent);
+            // ToDo: Handle arrival event
 
 #ifdef DEBUG_SHOW_MOT_WAYPOINTS
             m_owner->GetMap()->MonsterYellToMap(GetCreatureTemplateStore(1), 238, LANG_UNIVERSAL, NULL);
@@ -322,11 +319,8 @@ void MassiveObjectTransportBase::Update(uint32 diff)
                 m_transportStopTimer = node.delay * 1000;
                 break;
             }
-
-            if (pointId == m_currentNode)
-                break;
         }
-        while (true);
+        while (pointId != m_currentNode);
     }
 
     // Last waypoint is reached
@@ -357,17 +351,6 @@ void MassiveObjectTransportBase::DestroyAllPassengers()
     }
 }
 
-void MassiveObjectTransportBase::LoadTransportSpline()
-{
-    // ToDo: Handle elevators and similar
-    MANGOS_ASSERT(m_owner->GetObjectGuid().IsMOTransport());
-
-    m_transportSpline = sTransportMgr.GetTransportSpline(m_owner->GetEntry(), m_owner->GetMap()->GetId());
-    MANGOS_ASSERT(m_transportSpline);
-
-    m_pointIdx = m_transportSpline->first();
-}
-
 void MassiveObjectTransportBase::UpdateTransportSpline(uint32 diff)
 {
     m_timePassed += diff;
@@ -395,7 +378,7 @@ void MassiveObjectTransportBase::UpdateTransportSpline(uint32 diff)
 
 TaxiPathNodeEntry const& MassiveObjectTransportBase::GetCurrentNode()
 {
-    TaxiPathNodeList const& path = sTransportMgr.GetTaxiPathNodeList(((GameObject*)m_owner)->GetGOInfo()->moTransport.taxiPathId);
+    TaxiPathNodeList const& path = TransportMgr::GetTaxiPathNodeList(((GameObject*)m_owner)->GetGOInfo()->moTransport.taxiPathId);
     MANGOS_ASSERT(m_currentNode < path.size() && "Current node doesn't exist in transport path.");
 
     return path[m_currentNode];

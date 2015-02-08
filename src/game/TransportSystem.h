@@ -116,7 +116,7 @@ class GOTransportBase : public TransportBase
 class MassiveObjectTransportBase : public GOTransportBase
 {
     public:
-        explicit MassiveObjectTransportBase(GameObject* owner, uint32 pathId);
+        explicit MassiveObjectTransportBase(GameObject* owner);
         ~MassiveObjectTransportBase() { }
 
         void Update(uint32 diff) override;
@@ -127,7 +127,6 @@ class MassiveObjectTransportBase : public GOTransportBase
         int32 GetPathProgress() const { return m_pathProgress; }
 
     private:
-        void LoadTransportSpline();
         void UpdateTransportSpline(uint32 diff);
 
         TaxiPathNodeEntry const& GetCurrentNode();
