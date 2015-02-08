@@ -48,12 +48,17 @@ class TransportMgrInfo                                                          
         bool IsVisitingThisMap(uint32 mapId) { return m_waypoints.find(mapId) != m_waypoints.end(); }
         bool IsMultiMapTransporter() { return m_waypoints.size() > 1; }
 
+        void SetSpawned(bool spawned) { m_spawned = spawned; }
+        bool IsSpawned() { return m_spawned; }
+
     private:
         void CalculateWaypoints();
 
         GameObjectInfo const* m_goInfo;                                             // goInfo
         TransportSplineMap m_waypoints;                                             // Waypoints
         uint32 m_period;                                                            // period for one circle
+
+        bool m_spawned;                                                             // avoids creation of multiple multi-map transporter
 };
 
 typedef std::map < uint32 /*goEntry*/, TransportMgrInfo* > TransportMgrInfoMap;     // TransportMgrInfo by go-entry

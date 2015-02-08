@@ -28,7 +28,8 @@ INSTANTIATE_SINGLETON_1(TransportMgr);
 
 TransportMgrInfo::TransportMgrInfo(GameObjectInfo const* _goInfo) :
     m_goInfo(_goInfo),
-    m_period(0)
+    m_period(0),
+    m_spawned(false)
 {
     CalculateWaypoints();
 }
@@ -135,9 +136,14 @@ void TransportMgr::LoadTransporterForMap(Map* map)
 
     for (TransportMgrInfoMap::const_iterator itr = m_transportMgrInfos.begin(); itr != m_transportMgrInfos.end(); ++itr)
     {
-        // Instance transporter must be always in one map. Note: This iterates over all transporters, hence we must check this way
-        if ((!itr->second->IsMultiMapTransporter() || map->IsContinent()) && itr->second->IsVisitingThisMap(map->GetId()))
-            CreateTransporter(itr->second, map);
+        if ((!itr->second->IsSpawned() || map->Instanceable()) && itr->second->IsVisitingThisMap(map->GetId()))
+        {
+            // Instance transporter must be always in one map. Note: This iterates over all transporters, hence we must check this way
+            MANGOS_ASSERT(map->IsContinent() || !itr->second->IsMultiMapTransporter());
+
+            // Needed to avoid creation of multiple multi-map transporter
+            itr->second->SetSpawned(CreateTransporter(itr->second, map) != NULL);
+        }
     }
 }
 
