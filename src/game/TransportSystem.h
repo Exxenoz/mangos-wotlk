@@ -98,19 +98,33 @@ namespace Movement
 class GOTransportBase : public TransportBase
 {
     public:
-        explicit GOTransportBase(GameObject* owner, uint32 pathId);
-        ~GOTransportBase();
+        explicit GOTransportBase(GameObject* owner) : TransportBase(owner) { }
+        virtual ~GOTransportBase() { }
 
         bool Board(WorldObject* passenger, float lx, float ly, float lz, float lo);
         bool UnBoard(WorldObject* passenger);
 
-        void Update(uint32 diff) override;
+        virtual void Update(uint32 diff) override;
 
         GameObject* GetOwner() const { return (GameObject*)m_owner; }
-        int32 GetPathProgress() const { return m_pathProgress; }
+};
+
+/**
+ * A class to provide support for massive object transporter.
+ */
+
+class MassiveObjectTransportBase : public GOTransportBase
+{
+    public:
+        explicit MassiveObjectTransportBase(GameObject* owner, uint32 pathId);
+        ~MassiveObjectTransportBase() { }
+
+        void Update(uint32 diff) override;
 
         void InitializePassengers();
         void DestroyAllPassengers();
+
+        int32 GetPathProgress() const { return m_pathProgress; }
 
     private:
         void LoadTransportSpline();

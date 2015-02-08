@@ -187,23 +187,6 @@ void TransportBase::UnBoardPassenger(WorldObject* passenger)
 
 /* *************************************** GOTransportBase ***************************************/
 
-GOTransportBase::GOTransportBase(GameObject* owner, uint32 pathId) :
-    TransportBase(owner),
-    m_transportStopTimer(0),
-    m_currentNode(0),
-    m_pointIdx(0),
-    m_timePassed(0),
-    m_pathProgress(0),
-    m_bArrived(false),
-    m_bInitialized(false)
-{
-    LoadTransportSpline();
-}
-
-GOTransportBase::~GOTransportBase()
-{
-}
-
 bool GOTransportBase::Board(WorldObject* passenger, float lx, float ly, float lz, float lo)
 {
     MANGOS_ASSERT(passenger);
@@ -245,6 +228,26 @@ bool GOTransportBase::UnBoard(WorldObject* passenger)
 }
 
 void GOTransportBase::Update(uint32 diff)
+{
+    TransportBase::Update(diff);
+}
+
+/* ********************************* MassiveObjectTransportBase *********************************/
+
+MassiveObjectTransportBase::MassiveObjectTransportBase(GameObject* owner, uint32 pathId) :
+    GOTransportBase(owner),
+    m_transportStopTimer(0),
+    m_currentNode(0),
+    m_pointIdx(0),
+    m_timePassed(0),
+    m_pathProgress(0),
+    m_bArrived(false),
+    m_bInitialized(false)
+{
+    LoadTransportSpline();
+}
+
+void MassiveObjectTransportBase::Update(uint32 diff)
 {
     if (!m_bInitialized) // TODO REMOVE and call directly when the MOT is properly created
     {
@@ -331,7 +334,7 @@ void GOTransportBase::Update(uint32 diff)
         sTransportMgr.ReachedLastWaypoint(this);
 }
 
-void GOTransportBase::InitializePassengers()
+void MassiveObjectTransportBase::InitializePassengers()
 {
     if (Creature* pSummoned = NULL)//m_owner->SummonCreature(1, m_owner->GetPositionX()+5, m_owner->GetPositionY()+5, m_owner->GetPositionZ()+30, 0.0f, TEMPSUMMON_DEAD_DESPAWN, 0))
     {
@@ -342,7 +345,7 @@ void GOTransportBase::InitializePassengers()
     }
 }
 
-void GOTransportBase::DestroyAllPassengers()
+void MassiveObjectTransportBase::DestroyAllPassengers()
 {
     for (GuidList::iterator itr = m_summonedPassengers.begin(); itr != m_summonedPassengers.end(); ++itr)
     {
@@ -354,7 +357,7 @@ void GOTransportBase::DestroyAllPassengers()
     }
 }
 
-void GOTransportBase::LoadTransportSpline()
+void MassiveObjectTransportBase::LoadTransportSpline()
 {
     // ToDo: Handle elevators and similar
     MANGOS_ASSERT(m_owner->GetObjectGuid().IsMOTransport());
@@ -365,7 +368,7 @@ void GOTransportBase::LoadTransportSpline()
     m_pointIdx = m_transportSpline->first();
 }
 
-void GOTransportBase::UpdateTransportSpline(uint32 diff)
+void MassiveObjectTransportBase::UpdateTransportSpline(uint32 diff)
 {
     m_timePassed += diff;
 
@@ -390,7 +393,7 @@ void GOTransportBase::UpdateTransportSpline(uint32 diff)
     }
 }
 
-TaxiPathNodeEntry const& GOTransportBase::GetCurrentNode()
+TaxiPathNodeEntry const& MassiveObjectTransportBase::GetCurrentNode()
 {
     TaxiPathNodeList const& path = sTransportMgr.GetTaxiPathNodeList(((GameObject*)m_owner)->GetGOInfo()->moTransport.taxiPathId);
     MANGOS_ASSERT(m_currentNode < path.size() && "Current node doesn't exist in transport path.");
@@ -398,7 +401,7 @@ TaxiPathNodeEntry const& GOTransportBase::GetCurrentNode()
     return path[m_currentNode];
 }
 
-Movement::Location GOTransportBase::ComputePosition()
+Movement::Location MassiveObjectTransportBase::ComputePosition()
 {
     float u = 1.f;
     int32 seg_time = m_transportSpline->length(m_pointIdx, m_pointIdx + 1);
@@ -413,57 +416,6 @@ Movement::Location GOTransportBase::ComputePosition()
 
     return c;
 }
-
-/*void GOTransportBase::LoadTransportPath(uint32 pathId)
-{
-    Movement::MoveSplineInitArgs args;
-    args.flags = Movement::MoveSplineFlag(Movement::MoveSplineFlag::Catmullrom);
-    args.velocity = ((GameObject*)m_owner)->GetGOInfo()->moTransport.moveSpeed;
-
-    TaxiPathNodeList const& path = sTransportMgr.GetTaxiPathNodeList(pathId);
-    uint32 stopDuration = 0;
-
-    Movement::MoveSplineInitArgs args2;
-    args2.flags = Movement::MoveSplineFlag(Movement::MoveSplineFlag::Catmullrom);
-    args2.velocity = ((GameObject*)m_owner)->GetGOInfo()->moTransport.moveSpeed;
-    Movement::MoveSpline* spline2TEST = new Movement::MoveSpline();
-    uint32 stopDuration2 = 0;
-
-    for (uint32 i = 0; i < path.size(); ++i)
-    {
-        if (path[i].mapid == m_owner->GetMap()->GetId())
-        {
-            args.path.push_back(G3D::Vector3(path[i].x, path[i].y, path[i].z));
-
-            if (path[i].arrivalEventID || path[i].delay || path[i].departureEventID)
-            {
-                stopDuration += path[i].delay * 1000; // MS Time
-                m_transportStops.insert(TransportStopMap::value_type(args.path.size() - 1,
-                    TransportStop(path[i].arrivalEventID, path[i].delay * 1000, path[i].departureEventID)));
-            }
-        }
-        else
-        {
-            args2.path.push_back(G3D::Vector3(path[i].x, path[i].y, path[i].z));
-
-            if (path[i].arrivalEventID || path[i].delay || path[i].departureEventID)
-                stopDuration2 += path[i].delay * 1000; // MS Time
-        }
-    }
-
-    m_moveSpline->Initialize(args);
-    spline2TEST->Initialize(args2);
-
-    DEBUG_LOG("DURATION DER STRECKE1: %i", m_moveSpline->Duration() + stopDuration);
-    DEBUG_LOG("STOPDURATION1: %u", stopDuration);
-    DEBUG_LOG("DURATION DER STRECKE2: %i", spline2TEST->Duration() + stopDuration2);
-    DEBUG_LOG("STOPDURATION2: %u", stopDuration2);
-
-    // ToDo: Set period !correctly!
-    m_owner->SetUInt32Value(GAMEOBJECT_LEVEL, m_moveSpline->Duration() + stopDuration + spline2TEST->Duration() + stopDuration2);
-
-    delete spline2TEST;
-}*/
 
 /* **************************************** TransportInfo ****************************************/
 
