@@ -1554,8 +1554,7 @@ void WhoIsTheKillerSpiel::KillerModifikationenSetzen(Player* pKiller)
         else
             pKiller->UpdateSpeed(MOVE_FLIGHT, true, float(sWhoIsTheKillerMgr.GetEinstellung(KILLER_GESCHW_FLUG)));
         // Schaltet den Flugmodus fuer den Killer an
-        WorldPacket data(12);
-        data.SetOpcode(SMSG_MOVE_SET_CAN_FLY);
+        WorldPacket data(SMSG_MOVE_SET_CAN_FLY, 12);
         data << pKiller->GetPackGUID();
         data << uint32(0);   
         pKiller->SendMessageToSet(&data, true);
@@ -1582,8 +1581,7 @@ void WhoIsTheKillerSpiel::KillerModifikationenEntfernen(Player* pKiller)
         pKiller->UpdateSpeed(MOVE_RUN, true, 1.0f);
         pKiller->UpdateSpeed(MOVE_FLIGHT, true, 1.0f);
         // Schaltet den Flugmodus fuer den Killer aus
-        WorldPacket data(12);
-        data.SetOpcode(SMSG_MOVE_UNSET_CAN_FLY);
+        WorldPacket data(SMSG_MOVE_UNSET_CAN_FLY, 12);
         data << pKiller->GetPackGUID();
         data << uint32(0);   
         pKiller->SendMessageToSet(&data, true);

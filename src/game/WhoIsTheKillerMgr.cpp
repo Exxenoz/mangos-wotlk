@@ -9,8 +9,6 @@
 #include "Log.h"
 #include "World.h"
 
-#include "Policies/SingletonImp.h"
-
 INSTANTIATE_SINGLETON_1( WhoIsTheKillerMgr );
 
 WhoIsTheKillerMgr::WhoIsTheKillerMgr()
