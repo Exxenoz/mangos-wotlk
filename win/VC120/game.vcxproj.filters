@@ -393,6 +393,12 @@
     <ClCompile Include="..\..\src\game\Vehicle.cpp">
       <Filter>Object</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\game\WhoIsTheKillerMgr.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\WhoIsTheKillerSpiel.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\game\DBCStores.cpp">
       <Filter>Server</Filter>
     </ClCompile>
@@ -859,6 +865,12 @@
       <Filter>Object</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\game\Vehicle.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\WhoIsTheKillerMgr.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\WhoIsTheKillerSpiel.h">
       <Filter>Object</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\game\DBCEnums.h">
