@@ -1724,3 +1724,119 @@ SOAP.Port = 7878
 CharDelete.Method = 0
 CharDelete.MinLevel = 0
 CharDelete.KeepDays = 30
+
+###################################################################################################################
+# Who is the Killer Einstellungen
+#
+#    WhoIsTheKiller.Countdown
+#        Countdown in Sekunden bis zum eigentlichen Spielstart
+#        Default: 10
+#
+#    WhoIsTheKiller.Phase
+#        Phase in der gespielt wird
+#        Default: 1024
+#
+#    WhoIsTheKiller.CamperMin
+#        Wieviele Camper man mindestens braucht um das Spiel als Leiter zu starten
+#        Default: 2
+#
+#    WhoIsTheKiller.CamperModel
+#        Arbeiter
+#        Default: 17330
+#
+#    WhoIsTheKiller.CamperWiederbelebungsTimer
+#        Sekunden die der Camper warten muss bis er wiederbelebt wird
+#        Default: 5
+#
+#    WhoIsTheKiller.KillerModel
+#        Gargoyle
+#        Default: 17311
+#
+#    WhoIsTheKiller.KillerGeschwBoden
+#        Boden-Geschwindigkeit des Killers
+#        Default: 3
+#
+#    WhoIsTheKiller.KillerGeschwFlug
+#        Flug-Geschwindigkeit des Killers
+#        Default: 5
+#
+#    WhoIsTheKiller.KillerCooldownKillen
+#        Sekunden die der Killer warten muss, bis das gefangene Opfer gekillt werden kann
+#        Default: 3
+#
+#    WhoIsTheKiller.KillerSignalIcon
+#        ID des Killer Signal Icon
+#        Default: 41
+#
+#    WhoIsTheKiller.KillerSignalInterval
+#        Sekunden Interval in dem der Killer Signale bekommt
+#        Default: 10
+#
+#    WhoIsTheKiller.GMGewonnen
+#        Anzahl der Goldmuenzen, die der Spieler bekommt, wenn er gewonnen hat
+#        Default: 1
+#
+#    WhoIsTheKiller.EVGewonnen
+#        Anzahl der Eventmuenzen, die der Spieler bekommt, wenn er gewonnen hat
+#        Default: 3
+#
+#    WhoIsTheKiller.EVUnentschieden
+#        Anzahl der Eventmuenzen, die der Spieler bekommt, wenn das Spiel unentschieden endet
+#        Default: 1
+#
+#    WhoIsTheKiller.EVVerloren
+#        Anzahl der Eventmuenzen, die der Spieler bekommt, wenn er verloren hat
+#        Default: 0
+#
+#    WhoIsTheKiller.ZonenTimerWechsel
+#        Bei Zonenwechsel wird der Spieler nach Ablauf dieser Zeit in Sekunden teleportiert
+#        Default: 5
+#
+#    WhoIsTheKiller.AktionsEntfernungMax
+#        Maximale Entfernung zw. Killer und Camper, in diesem Bereich koennen Aktionen durchgefuehrt werden
+#        Default: 25
+#
+#    WhoIsTheKiller.MaxErstellteSpiele
+#        Maximale Anzahl von gleichzeitig vorhandenen erstellten Spielen
+#        Default: 10
+#
+#    WhoIsTheKiller.MaxSpielerAnzahl
+#        Maximale Anzahl von Spielern in einem Spiel
+#        Default: 10
+#
+#    WhoIsTheKiller.MaxAnzahlLeben
+#        Maximale Anzahl von Leben die man auswaehlen kann
+#        Default: 10
+#
+#    WhoIsTheKiller.MaxAnzahlKiller
+#        Maximale Anzahl von Killern die man auswaehlen kann
+#        Default: 3
+#
+#    WhoIsTheKiller.MaxZeichenSpielname
+#        Maximale Anzahl von Zeichen, die der Spielname lang sein darf
+#        Default: 16
+#
+###################################################################################################################
+
+WhoIsTheKiller.Countdown = 10
+WhoIsTheKiller.Phase = 1024
+WhoIsTheKiller.CamperMin = 2
+WhoIsTheKiller.CamperModel = 17330
+WhoIsTheKiller.CamperWiederbelebungsTimer = 5
+WhoIsTheKiller.KillerModel = 17311
+WhoIsTheKiller.KillerGeschwBoden = 3
+WhoIsTheKiller.KillerGeschwFlug = 5
+WhoIsTheKiller.KillerCooldownKillen = 3
+WhoIsTheKiller.KillerSignalIcon = 41
+WhoIsTheKiller.KillerSignalInterval = 10
+WhoIsTheKiller.GMGewonnen = 1
+WhoIsTheKiller.EVGewonnen = 3
+WhoIsTheKiller.EVUnentschieden = 1
+WhoIsTheKiller.EVVerloren = 0
+WhoIsTheKiller.ZonenTimerWechsel = 5
+WhoIsTheKiller.AktionsEntfernungMax = 25
+WhoIsTheKiller.MaxErstellteSpiele = 10
+WhoIsTheKiller.MaxSpielerAnzahl = 10
+WhoIsTheKiller.MaxAnzahlLeben = 10
+WhoIsTheKiller.MaxAnzahlKiller = 3
+WhoIsTheKiller.MaxZeichenSpielname = 16
