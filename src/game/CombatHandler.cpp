@@ -23,6 +23,7 @@
 #include "CreatureAI.h"
 #include "ObjectGuid.h"
 #include "Player.h"
+#include "WhoIsTheKillerMgr.h"
 
 void WorldSession::HandleAttackSwingOpcode(WorldPacket& recv_data)
 {
@@ -48,13 +49,17 @@ void WorldSession::HandleAttackSwingOpcode(WorldPacket& recv_data)
         return;
     }
 
-    if (_player->IsFriendlyTo(pEnemy) || pEnemy->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE))
+    WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(_player->GetObjectGuid());
+    if (!pSpiel || !pSpiel->IstAlsKillerOderCamperAngemeldet(_player->GetObjectGuid()) || !pSpiel->IstAlsKillerOderCamperAngemeldet(pEnemy->GetObjectGuid()))
     {
-        sLog.outError("WORLD: Enemy %s is friendly", guid.GetString().c_str());
+        if (_player->IsFriendlyTo(pEnemy) || pEnemy->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE))
+        {
+            sLog.outError("WORLD: Enemy %s is friendly", guid.GetString().c_str());
 
-        // stop attack state at client
-        SendAttackStop(pEnemy);
-        return;
+            // stop attack state at client
+            SendAttackStop(pEnemy);
+            return;
+        }
     }
 
     if (!pEnemy->isAlive())

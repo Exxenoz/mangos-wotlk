@@ -42,6 +42,7 @@
 #include "Pet.h"
 #include "SocialMgr.h"
 #include "DBCEnums.h"
+#include "WhoIsTheKillerMgr.h"
 
 void WorldSession::HandleRepopRequestOpcode(WorldPacket& recv_data)
 {
@@ -169,7 +170,14 @@ void WorldSession::HandleWhoOpcode(WorldPacket& recv_data)
             continue;
 
         // check if target is globally visible for player
-        if (!pl->IsVisibleGloballyFor(_player))
+        if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(pl->GetObjectGuid()))
+        {
+            // Wenn der Spieler kein Killer ist, wird normal gecheckt
+            if (!pSpiel->IstAlsKillerAngemeldet(pl->GetObjectGuid()))
+                if (!pl->IsVisibleGloballyFor(_player))
+                    continue;
+        }
+        else if (!pl->IsVisibleGloballyFor(_player))
             continue;
 
         // check if target's level is in level range

@@ -67,6 +67,7 @@
 #include "CreatureLinkingMgr.h"
 #include "Calendar.h"
 #include "Weather.h"
+#include "WhoIsTheKillerMgr.h"
 
 INSTANTIATE_SINGLETON_1(World);
 
@@ -390,6 +391,9 @@ void World::LoadConfigSettings(bool reload)
             Log::WaitBeforeContinueIfNeed();
         }
     }
+
+    // Who is the Killer
+    sWhoIsTheKillerMgr.EinstellungenLaden();
 
     ///- Read the player limit and the Message of the day from the config file
     SetPlayerLimit(sConfig.GetIntDefault("PlayerLimit", DEFAULT_PLAYER_LIMIT), true);
@@ -1525,6 +1529,7 @@ void World::Update(uint32 diff)
     sMapMgr.Update(diff);
     sBattleGroundMgr.Update(diff);
     sOutdoorPvPMgr.Update(diff);
+    sWhoIsTheKillerMgr.Update(diff);
 
     ///- Delete all characters which have been deleted X days before
     if (m_timers[WUPDATE_DELETECHARS].Passed())

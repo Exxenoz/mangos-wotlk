@@ -29,6 +29,47 @@
 #include "SystemConfig.h"
 #include "revision.h"
 #include "Util.h"
+#include "WhoIsTheKillerMgr.h"
+
+bool ChatHandler::WhoIsTheKillerWechseln(char* args)
+{
+    if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(m_session->GetPlayer()->GetObjectGuid()))
+        return pSpiel->FigurWechseln(m_session->GetPlayer());
+
+    return false;
+}
+
+bool ChatHandler::WhoIsTheKillerCamperKillen(char* args)
+{
+    if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(m_session->GetPlayer()->GetObjectGuid()))
+        return pSpiel->CamperKillen(m_session->GetPlayer(), getSelectedPlayer());
+
+    return false;
+}
+
+bool ChatHandler::WhoIsTheKillerCamperFangen(char* args)
+{
+    if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(m_session->GetPlayer()->GetObjectGuid()))
+        return pSpiel->CamperFangen(m_session->GetPlayer(), getSelectedPlayer());
+
+    return false;
+}
+
+bool ChatHandler::WhoIsTheKillerCamperVerwirren(char* args)
+{
+    if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(m_session->GetPlayer()->GetObjectGuid()))
+        return pSpiel->CamperVerwirren(m_session->GetPlayer());
+
+    return false;
+}
+
+bool ChatHandler::WhoIsTheKillerSignalWechseln(char* args)
+{
+    if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(m_session->GetPlayer()->GetObjectGuid()))
+        return pSpiel->SignalWechseln(m_session->GetPlayer());
+
+    return false;
+}
 
 bool ChatHandler::HandleHelpCommand(char* args)
 {

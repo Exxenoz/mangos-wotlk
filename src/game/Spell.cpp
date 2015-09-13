@@ -47,6 +47,7 @@
 #include "Vehicle.h"
 #include "TemporarySummon.h"
 #include "SQLStorages.h"
+#include "WhoIsTheKillerMgr.h"
 
 extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
 
@@ -5058,7 +5059,18 @@ SpellCastResult Spell::CheckCast(bool strict)
                     if (!target_friendly_checked)
                     {
                         target_friendly_checked = true;
-                        target_friendly = m_caster->IsFriendlyTo(target);
+                        // Who is the Killer
+                        if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(m_caster->GetObjectGuid()))
+                        {
+                            if (pSpiel->IstAlsKillerOderCamperAngemeldet(m_caster->GetObjectGuid()) && pSpiel->IstAlsKillerOderCamperAngemeldet(target->GetObjectGuid()))
+                            {
+                                target_friendly = false;
+                            }
+                            else
+                                target_friendly = m_caster->IsFriendlyTo(target);
+                        }
+                        else
+                            target_friendly = m_caster->IsFriendlyTo(target);
                     }
 
                     if (target_friendly)
@@ -5969,6 +5981,12 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 if (m_caster->IsInDisallowedMountForm())
                     return SPELL_FAILED_NOT_SHAPESHIFT;
+
+                // Who is the Killer
+                if (m_caster->GetTypeId() == TYPEID_PLAYER)
+                    if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(m_caster->GetObjectGuid()))
+                        if (pSpiel->IstAlsKillerOderCamperAngemeldet(m_caster->GetObjectGuid()))
+                            return SPELL_FAILED_NO_MOUNTS_ALLOWED;
 
                 break;
             }

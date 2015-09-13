@@ -828,6 +828,12 @@ ChatCommand* ChatHandler::getCommandTable()
         { "gearscore",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleShowGearScoreCommand,       "", NULL },
         { "mmap",           SEC_GAMEMASTER,     false, NULL,                                           "", mmapCommandTable },
 
+        { "wechseln",       SEC_PLAYER,         false, &ChatHandler::WhoIsTheKillerWechseln,           "", NULL },
+        { "killen",         SEC_PLAYER,         false, &ChatHandler::WhoIsTheKillerCamperKillen,       "", NULL },
+        { "fangen",         SEC_PLAYER,         false, &ChatHandler::WhoIsTheKillerCamperFangen,       "", NULL },
+        { "verwirren",      SEC_PLAYER,         false, &ChatHandler::WhoIsTheKillerCamperVerwirren,    "", NULL },
+        { "signal",         SEC_PLAYER,         false, &ChatHandler::WhoIsTheKillerSignalWechseln,     "", NULL },
+
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 

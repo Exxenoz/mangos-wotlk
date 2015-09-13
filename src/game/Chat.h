@@ -628,6 +628,12 @@ class MANGOS_DLL_SPEC ChatHandler
         bool HandleMmapTestArea(char* args);
         bool HandleMmapTestHeight(char* args);
 
+        bool WhoIsTheKillerWechseln(char* args);
+        bool WhoIsTheKillerCamperKillen(char* args);
+        bool WhoIsTheKillerCamperFangen(char* args);
+        bool WhoIsTheKillerCamperVerwirren(char* args);
+        bool WhoIsTheKillerSignalWechseln(char* args);
+
         //! Development Commands
         bool HandleSaveAllCommand(char* args);
 

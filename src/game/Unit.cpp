@@ -51,6 +51,7 @@
 #include "movement/MoveSplineInit.h"
 #include "movement/MoveSpline.h"
 #include "CreatureLinkingMgr.h"
+#include "WhoIsTheKillerMgr.h"
 
 #include <math.h>
 #include <stdarg.h>
@@ -602,6 +603,24 @@ uint32 Unit::DealDamage(Unit* pVictim, uint32 damage, CleanDamage const* cleanDa
 
     uint32 health = pVictim->GetHealth();
     DEBUG_FILTER_LOG(LOG_FILTER_DAMAGE, "deal dmg:%d to health:%d ", damage, health);
+
+    // Who is the Killer
+    if (pVictim->GetTypeId() == TYPEID_PLAYER && health <= damage)
+    {
+        if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(pVictim->GetObjectGuid()))
+        {
+            if (pSpiel->GetSpielStatus() >= STATUS_KILLEN)
+            {
+                if (pSpiel->IstAlsKillerAngemeldet(pVictim->GetObjectGuid()))
+                {
+                    pSpiel->KillerTot((Player*)pVictim);
+                    damage = 0;
+                }
+                else if (pSpiel->IstAlsCamperAngemeldet(pVictim->GetObjectGuid()))
+                    pSpiel->CamperTot((Player*)pVictim);
+            }
+        }
+    }
 
     // Rage from Damage made (only from direct weapon damage)
     if (cleanDamage && damagetype == DIRECT_DAMAGE && this != pVictim && GetTypeId() == TYPEID_PLAYER && (GetPowerType() == POWER_RAGE))

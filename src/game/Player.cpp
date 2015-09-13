@@ -66,6 +66,7 @@
 #include "SQLStorages.h"
 #include "Vehicle.h"
 #include "Calendar.h"
+#include "WhoIsTheKillerMgr.h"
 
 #include <cmath>
 
@@ -1630,6 +1631,11 @@ void Player::ToggleAFK()
     // afk player not allowed in battleground
     if (isAFK() && InBattleGround() && !InArena())
         LeaveBattleground();
+
+    // Who is the Killer
+    if (isAFK())
+        if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(GetObjectGuid()))
+            pSpiel->AFK(GetSession()->GetPlayer());
 }
 
 void Player::ToggleDND()
@@ -6897,6 +6903,11 @@ void Player::UpdateArea(uint32 newArea)
             CastSpell(this, 58730, true); */
     }
 
+    // Who is the Killer
+    if (area)
+        if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(GetObjectGuid()))
+            pSpiel->AreaWechsel(GetSession()->GetPlayer(), area->ID);
+
     UpdateAreaDependentAuras();
 }
 
@@ -6930,6 +6941,10 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
             Weather* wth = GetMap()->GetWeatherSystem()->FindOrCreateWeather(newZone);
             wth->SendWeatherUpdateToPlayer(this);
         }
+
+        // Who is the Killer
+        if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(GetObjectGuid()))
+            pSpiel->ZonenWechsel(GetSession()->GetPlayer());
     }
 
     m_zoneUpdateId    = newZone;
@@ -8599,6 +8614,14 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
 
     switch (zoneid)
     {
+        case 10: // Daemmerwald
+        {
+            // Who is the Killer
+            if (WhoIsTheKillerSpiel* pSpiel = sWhoIsTheKillerMgr.GetSpiel(GetObjectGuid()))
+                pSpiel->UserInterface(GetObjectGuid(), data, count);
+
+            break;
+        }
         case 139:                                           // Eastern Plaguelands
         case 1377:                                          // Silithus
         case 3483:                                          // Hellfire Peninsula
