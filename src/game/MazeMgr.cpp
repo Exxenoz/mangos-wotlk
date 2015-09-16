@@ -2,8 +2,6 @@
 #include "ObjectMgr.h"
 #include "MazeMgr.h"
 
-#include "Policies/SingletonImp.h"
-
 INSTANTIATE_SINGLETON_1(MazeMgr);
 
 MazeMgr::MazeMgr() :
