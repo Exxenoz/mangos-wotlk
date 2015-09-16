@@ -828,6 +828,8 @@ ChatCommand* ChatHandler::getCommandTable()
         { "gearscore",      SEC_ADMINISTRATOR,  false, &ChatHandler::HandleShowGearScoreCommand,       "", NULL },
         { "mmap",           SEC_GAMEMASTER,     false, NULL,                                           "", mmapCommandTable },
 
+        { "maze",           SEC_ADMINISTRATOR,  false, &ChatHandler::HandleMazeCommand,                "", NULL },
+
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
 
