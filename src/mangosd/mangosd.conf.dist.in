@@ -1050,7 +1050,7 @@ ListenRange.Say = 40
 ListenRange.TextEmote = 40
 ListenRange.Yell = 300
 GuidReserveSize.Creature = 100
-GuidReserveSize.GameObject = 100
+GuidReserveSize.GameObject = 100000
 
 ###################################################################################################################
 # CHAT SETTINGS
