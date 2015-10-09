@@ -114,7 +114,7 @@ bool ItemUse_item_petrov_cluster_bombs(Player* pPlayer, Item* pItem, const Spell
     if (pPlayer->GetZoneId() != ZONE_ID_HOWLING)
         return false;
 
-    if (!pPlayer->GetTransport() || pPlayer->GetAreaId() != AREA_ID_SHATTERED_STRAITS)
+    if (!pPlayer->IsOnMOTransport() || pPlayer->GetAreaId() != AREA_ID_SHATTERED_STRAITS)
     {
         pPlayer->SendEquipError(EQUIP_ERR_NONE, pItem, NULL);
 
